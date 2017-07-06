@@ -1,0 +1,80 @@
+# David Ziama
+# 3
+# B
+
+# Our User Inout
+user_input = [{'course': 'python', 'LastGPA' : 90, 'CurrentGPA' : 80},
+{'course': 'python', 'LastGPA' : 95, 'CurrentGPA': 85},
+{'course': 'python', 'LastGPA' : 100, 'CurrentGPA': 100}]
+
+# define my fucntion
+def gpa_avg(dict1):
+    #loop through and find the average
+    for x in dict1:
+        x['LastGPA+CurrentGPA'] = (x.pop('LastGPA') +x.pop('CurrentGPA'))/2
+    return dict1
+
+# Print our input again
+print(user_input)
+# Print our output
+print(gpa_avg(user_input))
+
+########################################################################################
+
+# David Ziama
+# 3
+# C
+
+# Get list of words from users
+user_input = input("Please enter your words seperated by commas: ")
+
+# Print out the inputs so user can see them
+print("Input: ", user_input)
+
+# breakdown the string into a list of words
+str = user_input.split(',')
+
+# Sort and print sorted comma separated list
+for word in str:
+    sorted_words = (", ".join(sorted(set(str))))
+print("Output: ", sorted_words)
+
+#####################################################################################
+
+# David Ziama
+# 3
+# D
+
+
+# The symmetric difference of two sets is the set of elements that are unique to each set
+
+# Get items list from user.
+# In this case I decided to use a person an their friends three favorite countries
+
+user1 = input("What is User 1 name: ")
+user2 = input("what is User 2 name: ")
+print("\n")
+print("Welcome to my symmetric difference finder", user1, "and", user2, ".")
+print("This program will ask each of you for your favorite countries and see if you have any in commom")
+print("\n")
+one = input("User 1, What is your first favorite country? ")
+two = input("User 1, What is your second favorite country? ")
+three = input("User 1, What is your third favorite country? ")
+four = input("User 2, What is your first favorite country? ")
+five = input("User 2, What is your second favorite country? ")
+six = input("User 2, What is your third favorite country? ")
+
+# Define the sets
+
+user1_list = set([one, two, three])
+user2_list = set([four, five, six])
+
+# Set symmetric difference
+sym_diff = user1_list ^ user2_list
+
+# Print the symmetric difference
+print("The Symmetric Diffrence of" , user1, "and", user2, "favorite countries is" ,sym_diff)
+
+
+
+
