@@ -1,0 +1,178 @@
+David Ziama
+Class ID 3
+Lab Assignment 6
+Part 3
+
+Explain and give an example of any of the clustering techniques below: 
+• Spectral  
+	
+SpectralClustering does a low-dimension embedding of the affinity matrix between samples, followed by a KMeans in the low dimensional space. It is especially efficient if the affinity matrix is sparse and the pyamg module is installed. SpectralClustering requires the number of clusters to be specified. It works well for a small number of clusters but is not advised when using many clusters.
+For two clusters, it solves a convex relaxation of the normalised cuts problem on the similarity graph: cutting the graph in two so that the weight of the edges cut is small compared to the weights of the edges inside each cluster. This criteria is especially interesting when working on images: graph vertices are pixels, and edges of the similarity graph are a function of the gradient of the image.
+
+SpectralClustering parameters(n_clusters=8, eigen_solver=None, random_state=None, n_init=10, gamma=1.0, affinity=’rbf’, n_neighbors=10, eigen_tol=0.0, assign_labels=’kmeans’, degree=3, coef0=1, kernel_params=None, n_jobs=1)
+
+Example:
+
+print(__doc__)
+
+# Authors:  Emmanuelle Gouillart <emmanuelle.gouillart@normalesup.org>
+#           Gael Varoquaux <gael.varoquaux@normalesup.org>
+# License: BSD 3 clause
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+from sklearn.feature_extraction import image
+from sklearn.cluster import spectral_clustering
+
+l = 100
+x, y = np.indices((l, l))
+
+center1 = (28, 24)
+center2 = (40, 50)
+center3 = (67, 58)
+center4 = (24, 70)
+
+radius1, radius2, radius3, radius4 = 16, 14, 15, 14
+
+circle1 = (x - center1[0]) ** 2 + (y - center1[1]) ** 2 < radius1 ** 2
+circle2 = (x - center2[0]) ** 2 + (y - center2[1]) ** 2 < radius2 ** 2
+circle3 = (x - center3[0]) ** 2 + (y - center3[1]) ** 2 < radius3 ** 2
+circle4 = (x - center4[0]) ** 2 + (y - center4[1]) ** 2 < radius4 ** 2
+
+# #############################################################################
+# 4 circles
+img = circle1 + circle2 + circle3 + circle4
+
+# We use a mask that limits to the foreground: the problem that we are
+# interested in here is not separating the objects from the background,
+# but separating them one from the other.
+mask = img.astype(bool)
+
+img = img.astype(float)
+img += 1 + 0.2 * np.random.randn(*img.shape)
+
+# Convert the image into a graph with the value of the gradient on the
+# edges.
+graph = image.img_to_graph(img, mask=mask)
+
+# Take a decreasing function of the gradient: we take it weakly
+# dependent from the gradient the segmentation is close to a voronoi
+graph.data = np.exp(-graph.data / graph.data.std())
+
+# Force the solver to be arpack, since amg is numerically
+# unstable on this example
+labels = spectral_clustering(graph, n_clusters=4, eigen_solver='arpack')
+label_im = -np.ones(mask.shape)
+label_im[mask] = labels
+
+plt.matshow(img)
+plt.matshow(label_im)
+
+# #############################################################################
+# 2 circles
+img = circle1 + circle2
+mask = img.astype(bool)
+img = img.astype(float)
+
+img += 1 + 0.2 * np.random.randn(*img.shape)
+
+graph = image.img_to_graph(img, mask=mask)
+graph.data = np.exp(-graph.data / graph.data.std())
+
+labels = spectral_clustering(graph, n_clusters=2, eigen_solver='arpack')
+label_im = -np.ones(mask.shape)
+label_im[mask] = labels
+
+plt.matshow(img)
+plt.matshow(label_im)
+
+plt.show()
+
+
+
+
+
+
+• Hierarchical
+
+Hierarchical clustering is a general family of clustering algorithms that build nested clusters by merging or splitting them successively. This hierarchy of clusters is represented as a tree (or dendrogram). The root of the tree is the unique cluster that gathers all the samples, the leaves being the clusters with only one sample. See the Wikipedia page for more details.
+The AgglomerativeClustering object performs a hierarchical clustering using a bottom up approach: each observation starts in its own cluster, and clusters are successively merged together. The linkage criteria determines the metric used for the merge strategy:
+Ward minimizes the sum of squared differences within all clusters. It is a variance-minimizing approach and in this sense is similar to the k-means objective function but tackled with an agglomerative hierarchical approach.
+Maximum or complete linkage minimizes the maximum distance between observations of pairs of clusters.
+Average linkage minimizes the average of the distances between all observations of pairs of clusters.
+
+Example: 
+
+# Authors : Vincent Michel, 2010
+#           Alexandre Gramfort, 2010
+#           Gael Varoquaux, 2010
+# License: BSD 3 clause
+
+print(__doc__)
+
+import time as time
+import numpy as np
+import matplotlib.pyplot as plt
+import mpl_toolkits.mplot3d.axes3d as p3
+from sklearn.cluster import AgglomerativeClustering
+from sklearn.datasets.samples_generator import make_swiss_roll
+
+# #############################################################################
+# Generate data (swiss roll dataset)
+n_samples = 1500
+noise = 0.05
+X, _ = make_swiss_roll(n_samples, noise)
+# Make it thinner
+X[:, 1] *= .5
+
+# #############################################################################
+# Compute clustering
+print("Compute unstructured hierarchical clustering...")
+st = time.time()
+ward = AgglomerativeClustering(n_clusters=6, linkage='ward').fit(X)
+elapsed_time = time.time() - st
+label = ward.labels_
+print("Elapsed time: %.2fs" % elapsed_time)
+print("Number of points: %i" % label.size)
+
+# #############################################################################
+# Plot result
+fig = plt.figure()
+ax = p3.Axes3D(fig)
+ax.view_init(7, -80)
+for l in np.unique(label):
+    ax.scatter(X[label == l, 0], X[label == l, 1], X[label == l, 2],
+               color=plt.cm.jet(np.float(l) / np.max(label + 1)),
+               s=20, edgecolor='k')
+plt.title('Without connectivity constraints (time %.2fs)' % elapsed_time)
+
+
+# #############################################################################
+# Define the structure A of the data. Here a 10 nearest neighbors
+from sklearn.neighbors import kneighbors_graph
+connectivity = kneighbors_graph(X, n_neighbors=10, include_self=False)
+
+# #############################################################################
+# Compute clustering
+print("Compute structured hierarchical clustering...")
+st = time.time()
+ward = AgglomerativeClustering(n_clusters=6, connectivity=connectivity,
+                               linkage='ward').fit(X)
+elapsed_time = time.time() - st
+label = ward.labels_
+print("Elapsed time: %.2fs" % elapsed_time)
+print("Number of points: %i" % label.size)
+
+# #############################################################################
+# Plot result
+fig = plt.figure()
+ax = p3.Axes3D(fig)
+ax.view_init(7, -80)
+for l in np.unique(label):
+    ax.scatter(X[label == l, 0], X[label == l, 1], X[label == l, 2],
+               color=plt.cm.jet(float(l) / np.max(label + 1)),
+               s=20, edgecolor='k')
+plt.title('With connectivity constraints (time %.2fs)' % elapsed_time)
+
+plt.show()
